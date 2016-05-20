@@ -1,15 +1,16 @@
 from functools import partial
 
 import util
+import json
 
 
 class TelegramApi:
-    def __init__(self, message, misc, plugins, database, plugin_id):
+    def __init__(self, misc, database, plugin_id, message=None, plugin_data=None):
         self.message = message
         self.misc = misc
-        self.plugins = plugins
         self.database = database
         self.plugin_id = plugin_id
+        self.plugin_data = plugin_data
         self.send_photo = partial(self.send_file, 'sendPhoto')
         self.send_audio = partial(self.send_file, 'sendAudio')
         self.send_document = partial(self.send_file, 'sendDocument')
@@ -23,10 +24,14 @@ class TelegramApi:
         content['data'] = dict()
         content['url'] = 'https://api.telegram.org/bot{}/{}'.format(self.misc['token'], method_name)
         if check_content:
-            if self.message['chat']['type'] != 'private':
+            if self.message:
+                data = self.message
+            else:
+                data = self.plugin_data['prev_message']
+            if data['chat']['type'] != 'private':
                 content['data'].update({'reply_to_message_id': self.message['message_id']})
             if 'chat_id' not in kwargs:
-                content['data'].update({'chat_id': self.message['chat']['id']})
+                content['data'].update({'chat_id': data['chat']['id']})
             if 'file' in kwargs:
                 content['files'] = kwargs.pop('file')
         content['data'].update(kwargs)
@@ -45,7 +50,7 @@ class TelegramApi:
         return response
 
     def forward_message(self, message_id, **kwargs):
-        if 'chat_id' not in kwargs:
+        if 'chat_id' not in kwargs and self.message:
             kwargs['chat_id'] = kwargs['chat_id'] or self.message['chat']['id']
         return self.method('sendMessage', **locals())
 
@@ -104,7 +109,7 @@ class TelegramApi:
     def edit_content(self, method, **kwargs):
         arguments = kwargs
         if 'chat_id' and 'inline_message_id' not in arguments:
-            if 'message_id' in arguments:
+            if 'message_id' in arguments and self.message:
                 arguments.update({'chat_id': self.message['chat']['id']})
             else:
                 return 'ERROR: Need chat_id + message_id or inline_message_id'
@@ -122,14 +127,32 @@ class TelegramApi:
         return self.edit_content('editMessageText', **kwargs)
 
     def flag_message(self, parameters):
-        self.database.update("flagged_messages", {"currently_active": False}, {"chat_id": self.message['chat']['id']})
-        default = {"plugin_id": self.plugin_id, "chat_id": self.message['chat']['id'],
-                   "user_id": self.message['from']['id'], "single_use": False, "currently_active": True}
+        default = {"plugin_id": self.plugin_id, "single_use": False, "currently_active": True}
+        if self.message:
+            default.update({"chat_id": self.message['chat']['id'], "user_id": self.message['from']['id']})
+        else:
+            error = "Chat and/or user_id missing from parameters"
+            if parameters is dict:
+                if 'chat_id' or 'user_id' not in parameters:
+                    return error
+            else:
+                return error
         if type(parameters) is dict:
             default.update(parameters)
         elif type(parameters) is int:
             default.update({"message_id": parameters})
+        self.database.update("flagged_messages", {"currently_active": False},
+                             {"chat_id": self.message['chat']['id']})
         self.database.insert('flagged_messages', default)
+
+    def flag_time(self, time, plugin_data=None, plugin_id=None):
+        if not plugin_id:
+            plugin_id = self.plugin_id
+        default = {"prev_message": self.message}
+        if plugin_data and type(plugin_data) is dict():
+            default.update(plugin_data)
+        self.database.insert("flagged_time",
+                             {"plugin_id": plugin_id, "time": time, "plugin_data": json.dumps(default)})
 
     def download_file(self, file_object):
         if file_object['ok'] and file_object['result']['file_size'] < 20000000:

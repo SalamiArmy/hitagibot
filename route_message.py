@@ -33,7 +33,7 @@ class RouteMessage:
                         self.database.delete('flagged_messages', {'message_id': message_id, 'chat_id': chat_id})
                     self.message['flagged_message'] = True
                     self.plugins[result['plugin_id']].main(
-                        TelegramApi(self.message, self.misc, self.plugins, self.database, result['plugin_id']))
+                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message))
                 return False
         if self.message['chat']['type'] == 'private':
             if self.plugin_check():
@@ -50,7 +50,7 @@ class RouteMessage:
                                               'chat_id': chat_id})
                     self.message['flagged_message'] = True
                     self.plugins[result['plugin_id']].main(
-                        TelegramApi(self.message, self.misc, self.plugins, self.database, result['plugin_id'])
+                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message)
                     )
                     self.database.update("flagged_messages", {"currently_active": False},
                                          {"chat_id": chat_id})
@@ -64,8 +64,7 @@ class RouteMessage:
                 if self.check_argument(key, value, self.message):
                     plugin_triggered = True
                     plugin.main(
-                        TelegramApi(self.message, self.misc, self.plugins, self.database,
-                                    plugin_id=self.plugins.index(plugin))
+                        TelegramApi(self.misc, self.database, self.plugins.index(plugin), self.message)
                     )
         return plugin_triggered
 

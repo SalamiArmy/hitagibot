@@ -60,9 +60,9 @@ def clean_message(message, bot_name):  # Replace this with something based on Me
 def name_file(file_id, file_name):
     if file_name:
         match = re.findall('(\.[0-9a-zA-Z]+$)', file_name)
-        return file_id + match[0]
-    else:
-        return str(file_id)
+        if match:
+            return file_id + match[0]
+    return str(file_id)
 
 
 def init_package(config):  # Creates the package that's passed around, replaced eventually probably
@@ -84,6 +84,7 @@ def init_db():  # Creates the DB object and sets up hierarchy
                                 "pretty_name": "TEXT", "description": "TEXT", "usage": "TEXT"}, drop_existing=True)
     db.create_table("flagged_messages", {"plugin_id": "INT", "message_id": "INT", "chat_id": "INT",
                                          "user_id": "INT", "single_use": "BOOLEAN", "currently_active": "BOOLEAN"})
+    db.create_table("flagged_time", {"plugin_id": "INT", "time": "INT", "plugin_data": "TEXT"})
     db.create_table("downloads", {"file_id": "TEXT", "file_path": "TEXT"})
     return db
 

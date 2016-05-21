@@ -29,7 +29,7 @@ class TelegramApi:
             else:
                 data = self.plugin_data['prev_message']
             if data['chat']['type'] != 'private':
-                content['data'].update({'reply_to_message_id': self.message['message_id']})
+                content['data'].update({'reply_to_message_id': data['message_id']})
             if 'chat_id' not in kwargs:
                 content['data'].update({'chat_id': data['chat']['id']})
             if 'file' in kwargs:
@@ -50,9 +50,12 @@ class TelegramApi:
         return response
 
     def forward_message(self, message_id, **kwargs):
-        if 'chat_id' not in kwargs and self.message:
-            kwargs['chat_id'] = kwargs['chat_id'] or self.message['chat']['id']
-        return self.method('sendMessage', **locals())
+        package = kwargs
+        package.update({'message_id': message_id})
+        if 'chat_id' not in package:
+            chat_id = self.message['chat']['id'] if self.message else self.plugin_data['prev_message']['chat']['id']
+            package.update({'chat_id': chat_id})
+        return self.method('sendMessage', **package)
 
     def send_file(self, method, file, **kwargs):
         arguments = kwargs
@@ -84,7 +87,9 @@ class TelegramApi:
         return self.method('sendChatAction', **arguments)
 
     def get_user_profile_photos(self, user_id, offset=0, limit=0):
-        return self.method('getUserProfilePhotos', check_content=False, **locals())
+        arguments = locals()
+        del arguments['self']
+        return self.method('getUserProfilePhotos', check_content=False, **arguments)
 
     def get_file(self, file_id):
         return self.method('getFile', check_content=False, file_id=file_id)
@@ -104,13 +109,16 @@ class TelegramApi:
         return self.method('unbanChatMember', **arguments)
 
     def answer_callback_query(self, callback_query_id, text=None, show_alert=False):
-        return self.method('answerCallbackQuery', check_content=False, **locals())
+        arguments = locals()
+        del arguments['self']
+        return self.method('answerCallbackQuery', check_content=False, **arguments)
 
     def edit_content(self, method, **kwargs):
         arguments = kwargs
         if 'chat_id' and 'inline_message_id' not in arguments:
-            if 'message_id' in arguments and self.message:
-                arguments.update({'chat_id': self.message['chat']['id']})
+            if 'message_id' in arguments:
+                chat_id = self.message['chat']['id'] if self.message else self.plugin_data['prev_message']['chat']['id']
+                arguments.update({'chat_id': chat_id})
             else:
                 return 'ERROR: Need chat_id + message_id or inline_message_id'
         return self.method(method, check_content=False, **arguments)
@@ -127,28 +135,28 @@ class TelegramApi:
         return self.edit_content('editMessageText', **kwargs)
 
     def flag_message(self, parameters):
-        default = {"plugin_id": self.plugin_id, "single_use": False, "currently_active": True}
         if self.message:
-            default.update({"chat_id": self.message['chat']['id'], "user_id": self.message['from']['id']})
+            data = self.message
         else:
-            error = "Chat and/or user_id missing from parameters"
-            if parameters is dict:
-                if 'chat_id' or 'user_id' not in parameters:
-                    return error
-            else:
-                return error
+            data = self.plugin_data['prev_message']
+        chat_id = data['chat']['id']
+        default = {"plugin_id": self.plugin_id, "single_use": False, "currently_active": True,
+                   "chat_id": chat_id, "user_id": data['from']['id']}
         if type(parameters) is dict:
             default.update(parameters)
+            if 'chat_id' in parameters:
+                chat_id = parameters['chat_id']
         elif type(parameters) is int:
             default.update({"message_id": parameters})
-        self.database.update("flagged_messages", {"currently_active": False},
-                             {"chat_id": self.message['chat']['id']})
+        else:
+            default['plugin_data'] = parameters
+        self.database.update("flagged_messages", {"currently_active": False}, {"chat_id": chat_id})
         self.database.insert('flagged_messages', default)
 
     def flag_time(self, time, plugin_data=None, plugin_id=None):
         if not plugin_id:
             plugin_id = self.plugin_id
-        default = {"prev_message": self.message}
+        default = {"prev_message": self.message or self.plugin_data['prev_message']}
         if plugin_data and type(plugin_data) is dict():
             default.update(plugin_data)
         self.database.insert("flagged_time",

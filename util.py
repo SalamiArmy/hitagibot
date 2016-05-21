@@ -83,7 +83,8 @@ def init_db():  # Creates the DB object and sets up hierarchy
     db.create_table("plugins", {"plugin_id": "INT PRIMARY KEY NOT NULL", "plugin_name": "TEXT",
                                 "pretty_name": "TEXT", "description": "TEXT", "usage": "TEXT"}, drop_existing=True)
     db.create_table("flagged_messages", {"plugin_id": "INT", "message_id": "INT", "chat_id": "INT",
-                                         "user_id": "INT", "single_use": "BOOLEAN", "currently_active": "BOOLEAN"})
+                                         "user_id": "INT", "single_use": "BOOLEAN", "currently_active": "BOOLEAN",
+                                         "plugin_data": "TEXT"})
     db.create_table("flagged_time", {"plugin_id": "INT", "time": "INT", "plugin_data": "TEXT"})
     db.create_table("downloads", {"file_id": "TEXT", "file_path": "TEXT"})
     return db

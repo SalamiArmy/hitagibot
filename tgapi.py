@@ -40,13 +40,17 @@ class TelegramApi:
             print('Error with response\nResponse: {}\nSent: {}'.format(response, content))
         return response
 
-    def send_message(self, text, flag_message=False, **kwargs):
+    def send_message(self, text, flag_message=None, **kwargs):
         arguments = {'text': text, 'parse_mode': 'HTML'}
         arguments.update(kwargs)
         response = self.method('sendMessage', **arguments)
         if flag_message and response['ok']:  # Will crash if response attribute error
-            message = response['result']
-            self.flag_message(message['message_id'])
+            message_id = response['result']['message_id']
+            if type(flag_message) is dict and 'message_id' not in flag_message:
+                flag_message.update({'message_id': message_id})
+            else:
+                flag_message = message_id
+            self.flag_message(flag_message)
         return response
 
     def forward_message(self, message_id, **kwargs):
@@ -143,13 +147,13 @@ class TelegramApi:
         default = {"plugin_id": self.plugin_id, "single_use": False, "currently_active": True,
                    "chat_id": chat_id, "user_id": data['from']['id']}
         if type(parameters) is dict:
-            default.update(parameters)
             if 'chat_id' in parameters:
                 chat_id = parameters['chat_id']
+            if 'plugin_data' in parameters:
+                default['plugin_data'] = json.dumps(parameters.pop('plugin_data'))
+            default.update(parameters)
         elif type(parameters) is int:
             default.update({"message_id": parameters})
-        else:
-            default['plugin_data'] = parameters
         self.database.update("flagged_messages", {"currently_active": False}, {"chat_id": chat_id})
         self.database.insert('flagged_messages', default)
 
@@ -157,7 +161,7 @@ class TelegramApi:
         if not plugin_id:
             plugin_id = self.plugin_id
         default = {"prev_message": self.message or self.plugin_data['prev_message']}
-        if plugin_data and type(plugin_data) is dict():
+        if plugin_data and type(plugin_data) is dict:
             default.update(plugin_data)
         self.database.insert("flagged_time",
                              {"plugin_id": plugin_id, "time": time, "plugin_data": json.dumps(default)})

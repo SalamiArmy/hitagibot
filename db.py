@@ -56,7 +56,7 @@ class Database:
                 condition_list.append("{}=?".format(column))
             query += ' AND '.join(condition_list)
         query += ';'
-        return self.execute(query, bindings)
+        return self.execute(query, bindings, commit=True)
 
     def delete(self, table_name, conditions):
         conditions = collections.OrderedDict(conditions)

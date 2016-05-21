@@ -1,5 +1,5 @@
 import re
-
+import json
 import util
 from tgapi import TelegramApi
 
@@ -23,7 +23,8 @@ class RouteMessage:
         if 'reply_to_message' in self.message:
             message_id = self.message['reply_to_message']['message_id']
             db_selection = self.database.select("flagged_messages",
-                                                ["plugin_id", "user_id", "single_use", "currently_active"],
+                                                ["plugin_id", "user_id", "single_use", "currently_active",
+                                                 "plugin_data"],
                                                 {"message_id": message_id, "chat_id": chat_id})
             if db_selection:
                 for result in db_selection:
@@ -32,14 +33,18 @@ class RouteMessage:
                     if result['single_use']:
                         self.database.delete('flagged_messages', {'message_id': message_id, 'chat_id': chat_id})
                     self.message['flagged_message'] = True
+                    if result['plugin_data']:
+                        plugin_data = json.loads(result['plugin_data'])
+                    else:
+                        plugin_data = None
                     self.plugins[result['plugin_id']].main(
-                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message))
+                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message, plugin_data))
                 return False
         if self.message['chat']['type'] == 'private':
             if self.plugin_check():
                 return False
             db_selection = self.database.select("flagged_messages",
-                                                ["plugin_id", "single_use", "message_id"],
+                                                ["plugin_id", "single_use", "message_id", "plugin_data"],
                                                 {"chat_id": chat_id, "currently_active": True})
             if db_selection:
                 for result in db_selection:
@@ -48,9 +53,13 @@ class RouteMessage:
                         self.database.delete('flagged_messages',
                                              {'message_id': message_id,
                                               'chat_id': chat_id})
+                    if result['plugin_data']:
+                        plugin_data = json.loads(result['plugin_data'])
+                    else:
+                        plugin_data = None
                     self.message['flagged_message'] = True
                     self.plugins[result['plugin_id']].main(
-                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message)
+                        TelegramApi(self.misc, self.database, result['plugin_id'], self.message, plugin_data)
                     )
                     self.database.update("flagged_messages", {"currently_active": False},
                                          {"chat_id": chat_id})

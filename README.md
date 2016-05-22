@@ -11,7 +11,7 @@ First clone and cd to the repository
 git clone https://github.com/TopBakuhatsu/hitagibot.git
 cd hitagibot
 ```
-Afterwards set your token in the config.ini
+Afterwards set your token in the config.ini.template and rename to config.ini
 ```
 token = YOUR TOKEN HERE
 ```

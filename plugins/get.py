@@ -88,7 +88,7 @@ def main(tg):
 
 plugin_info = {
     'name': "Get",
-    'desc': "Gets images!"
+    'desc': "Gets images with Google's Custom Search API."
 }
 
 arguments = {

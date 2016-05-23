@@ -15,11 +15,6 @@ def main(tg):
 
     chat_id = tg.message['chat']['id']
     message = tg.message['text']
-    user = tg.message['from']['username'] \
-        if not tg.message['from']['username'] == '' \
-        else tg.message['from']['first_name'] + (' ' + tg.message['from']['last_name']) \
-        if not tg.message['from']['last_name'] == '' \
-        else ''
     botName = tg.misc['bot_info']['username']
 
     message = message.replace(botName, "")
@@ -34,21 +29,23 @@ def main(tg):
     client_secret = keyConfig.get('Imgur', 'CLIENT_SECRET')
     client = ImgurClient(client_id, client_secret)
     items = client.gallery_search(q=string.capwords(requestText),
-                                  advanced={'q_type': 'anigif'},
                                   sort='top',
-                                  window='all',
-                                  page=random.randint(0, 9))
-    for item in items:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.UPLOAD_PHOTO)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = item.link
-        bot.sendDocument(chat_id=userWithCurrentChatAction,
-                         filename=requestText,
-                         document=urlForCurrentChatAction)
+                                  window='all')
+    if len(items) > 0:
+        if items[0].link.endswith('.gif'):
+            bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.UPLOAD_PHOTO)
+            return bot.sendDocument(chat_id=chat_id,
+                                    filename=requestText,
+                                    document=items[0].link)
+        else:
+            bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.UPLOAD_PHOTO)
+            return bot.sendPhoto(chat_id=chat_id,
+                                 filename=requestText,
+                                 photo=items[0].link)
 
 
 plugin_info = {
-    'name': "Get",
+    'name': "Imgur",
     'desc': "Gets Imgur images!"
 }
 

@@ -1,7 +1,8 @@
 [BOT_CONFIG]
 token = 1234:ABCD
 admins = 1234,5678,9101
-plugins = welcome,echo,start,help
+plugins = welcome,echo,start,help,remind
+extensions =
 sleep = 0.5
 workers = 4
 

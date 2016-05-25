@@ -56,7 +56,7 @@ class Database:
                 condition_list.append("{}=?".format(column))
             query += ' AND '.join(condition_list)
         query += ';'
-        return self.execute(query, bindings)
+        return self.execute(query, bindings, commit=True)
 
     def delete(self, table_name, conditions):
         conditions = collections.OrderedDict(conditions)
@@ -85,5 +85,6 @@ class Database:
         for index, result in enumerate(self.db):
             return_obj.append(dict())
             for i, column_name in enumerate(columns):
+                column_name = column_name.replace('DISTINCT ', '')
                 return_obj[index].update({column_name: result[i]})
         return return_obj

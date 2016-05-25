@@ -50,6 +50,6 @@ plugin_info = {
 arguments = {
     'text': [
         "^[/]help$",
-        "^[/](help) (.*)"
+        "(?i)^[\/](help) (.*)"
     ]
 }

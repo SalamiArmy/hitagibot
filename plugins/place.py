@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -32,21 +28,23 @@ def main(tg):
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
-    mapsUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json?key=' + \
-              keyConfig.get('Google', 'GCSE_APP_ID') + '&location=-30,30&radius=50000&query='
-    realUrl = mapsUrl + requestText
+    mapsUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
+    args = {'key': keyConfig['Google']['GCSE_APP_ID'],
+            'location': '-30,30',
+            'radius': 50000,
+            'query': requestText}
+    realUrl = mapsUrl + '?' + urllib.parse.urlencode(args)
     data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
     if len(data['results']) >= 1:
         latNum = data['results'][0]['geometry']['location']['lat']
         lngNum = data['results'][0]['geometry']['location']['lng']
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.FIND_LOCATION)
-        bot.sendLocation(chat_id=chat_id, latitude=latNum, longitude=lngNum)
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        bot.sendMessage(chat_id=chat_id,
-                        text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find any places for ' + \
-                                  requestText + '.')
+        return bot.sendLocation(chat_id=chat_id, latitude=latNum, longitude=lngNum)
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
+                                                 ', I\'m afraid I can\'t find any places for ' + \
+                                                 requestText + '.')
 
 plugin_info = {
     'name': "Places",
@@ -55,6 +53,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](place) (.*)"
+        "(?i)^[\/](place) (.*)"
     ]
 }

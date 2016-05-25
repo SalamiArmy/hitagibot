@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -32,9 +28,11 @@ def main(tg):
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
-    translateUrl = 'https://www.googleapis.com/language/translate/v2?key=' + \
-                   keyConfig.get('Google', 'GCSE_APP_ID') + '&target=en&q='
-    realUrl = translateUrl + requestText
+    translateUrl = 'https://www.googleapis.com/language/translate/v2'
+    args = {'cx': keyConfig['Google']['GCSE_SE_ID'],
+            'target': 'en',
+            'q': requestText}
+    realUrl = translateUrl + '?' + urllib.parse.urlencode(args)
     data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
     if len(data['data']['translations']) >= 1:
         translation = data['data']['translations'][0]['translatedText']
@@ -61,6 +59,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](translate) (.*)"
+        "(?i)^[\/](translate) (.*)"
     ]
 }

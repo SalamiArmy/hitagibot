@@ -1,11 +1,11 @@
+import configparser
+
 import tungsten as tungsten
 
 import telegram
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -34,18 +34,14 @@ def main(tg):
         for pod in result.pods:
             for answer in pod.format['plaintext']:
                 if not answer == None:
-                    fullAnswer += answer.encode('ascii', 'ignore')
+                    fullAnswer += answer
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = (user + ': ' if not user == '' else '') + fullAnswer
-        bot.sendMessage(chat_id=chat_id, text=urlForCurrentChatAction)
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find any answers for ' + \
-                                  requestText
-        bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
+        return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + fullAnswer)
+    
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
+                              ', I\'m afraid I can\'t find any answers for ' + \
+                              requestText)
 
 plugin_info = {
     'name': "Answer",
@@ -54,6 +50,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getanswer) (.*)"
+        "(?i)^[\/](getanswer) (.*)"
     ]
 }

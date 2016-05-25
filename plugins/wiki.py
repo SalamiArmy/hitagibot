@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -66,6 +62,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](wiki) (.*)"
+        "(?i)^[\/](wiki) (.*)"
     ]
 }

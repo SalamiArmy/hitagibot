@@ -1,18 +1,11 @@
 # coding=utf-8
 import configparser
-import logging
 
 import soundcloud
 
 import telegram
 
-
-# reverse image search imports:
-
-
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -26,7 +19,7 @@ def main(tg):
         else ''
     botName = tg.misc['bot_info']['username']
 
-    message = message.replace(botName, "")
+    message = message.replace(botName, '')
 
     splitText = message.split(' ', 1)
 
@@ -38,17 +31,13 @@ def main(tg):
     track = client.get('/tracks', q=requestText, sharing='public')
     if len(track) >= 1:
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = (user + ': ' if not user == '' else '') + \
-                                  track[0].permalink_url
-        bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find the sound of ' + \
-                                  requestText + '.'
-        bot.sendMessage(chat_id=chat_id, text=urlForCurrentChatAction)
+        return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + \
+                                                     track[0].permalink_url)
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
+                                                 ', I\'m afraid I can\'t find the sound of ' + \
+                                                 requestText + '.')
 
 plugin_info = {
     'name': "Sound",
@@ -57,6 +46,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getsound) (.*)"
+        "(?i)^[\/](getsound) (.*)"
     ]
 }

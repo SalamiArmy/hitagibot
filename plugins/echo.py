@@ -24,6 +24,6 @@ plugin_info = {
 arguments = {
     'text': [
         "^[/]echo$",
-        "^[/](echo) (.*)"
+        "(?i)^[\/](echo) (.*)"
     ]
 }

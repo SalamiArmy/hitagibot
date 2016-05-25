@@ -1,18 +1,13 @@
 import configparser
 
 #coding= utf - 8
-import logging
+import random
 
 import telegram
 import urllib
 import xmltodict
 
-# reverse image search imports:
-
-
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -23,7 +18,7 @@ def main(tg):
         if not tg.message['from']['username'] == '' \
         else tg.message['from']['first_name'] + (' ' + tg.message['from']['last_name']) \
         if not tg.message['from']['last_name'] == '' \
-        else ''
+        else 'Dave'
     botName = tg.misc['bot_info']['username']
 
     message = message.replace(botName, "")
@@ -40,23 +35,20 @@ def main(tg):
     if len(data['entry_list']) >= 1:
         partOfSpeech = data['entry_list']['entry']['fl']
         if len(partOfSpeech) >= 1:
-            definitionText = data['entry_list']['entry']['def']['dt'][0]
+            getAllDefs = data['entry_list']['entry']['def']['dt']
+            if type(getAllDefs) is list:
+                definitionText = getAllDefs[random.randint(0, len(getAllDefs) - 1)]['#text'].replace(':', '')
+            else:
+                definitionText = getAllDefs['#text'].replace(':', '')
             bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-            bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + \
-                                      requestText.title() + ":\n" + \
-                                      partOfSpeech + ".\n\n" + definitionText)
-        else:
-            bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-            bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                      ', I\'m afraid I can\'t find any definitions for the word ' + \
-                                      requestText + '.')
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find any definitions for the word ' + \
-                                  requestText + '.'
-        bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
+            return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + \
+                                                         requestText.title() + ":\n" + \
+                                                         partOfSpeech + ".\n\n" + definitionText)
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + user + \
+                                                 ', I\'m afraid I can\'t find any definitions for the word ' + \
+                                                 requestText + '.')
 
 ############################# Ashley: http://dictionaryapi.net/ is down! ###############################
 # dicUrl = 'http://dictionaryapi.net/api/definition/'
@@ -94,6 +86,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](define) (.*)"
+        "(?i)^[\/](define) (.*)"
     ]
 }

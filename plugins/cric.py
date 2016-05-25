@@ -1,55 +1,39 @@
 # coding=utf-8
-import logging
+import configparser
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
 
     chat_id = tg.message['chat']['id']
-    message = tg.message['text']
-    user = tg.message['from']['username'] \
-        if not tg.message['from']['username'] == '' \
-        else tg.message['from']['first_name'] + (' ' + tg.message['from']['last_name']) \
-        if not tg.message['from']['last_name'] == '' \
-        else ''
-    botName = tg.misc['bot_info']['username']
-
-    message = message.replace(botName, "")
-
-    splitText = message.split(' ', 1)
-
-    requestText = splitText[1] if ' ' in message else ''
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
     allMatchesUrl = 'http://cricscore-api.appspot.com/csa'
-    allMatches = json.load(urllib.request.urlopen(allMatchesUrl))
+    allMatches = json.loads(urllib.request.urlopen(allMatchesUrl).read().decode('utf-8'))
     proteasMatchId = None
     for match in allMatches:
         if match['t1'] == 'South Africa' or match['t2'] == 'South Africa':
             proteasMatchId = match['id']
-    if proteasMatchId == None:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid the Proteas are not playing right now.'
-        bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
-    else:
+    if proteasMatchId != None:
         matchesUrl = 'http://cricscore-api.appspot.com/csa?id=' + str(proteasMatchId)
-        match = json.load(urllib.urlopen(matchesUrl))
+        match = json.loads(urllib.request.urlopen(matchesUrl).read().decode('utf-8'))
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = (match[0]['si'] + '\n' + match[0]['de'])
-        bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
+        return bot.sendMessage(chat_id=chat_id, text=(match[0]['si'] + '\n' + match[0]['de']))
+
+    user = tg.message['from']['username'] \
+        if not tg.message['from']['username'] == '' \
+        else tg.message['from']['first_name'] + (' ' + tg.message['from']['last_name']) \
+        if not tg.message['from']['last_name'] == '' \
+        else 'Dave'
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + user + ', I\'m afraid the Proteas are not playing right now.')
 
 plugin_info = {
     'name': "Cricket",
@@ -58,6 +42,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](cric)"
+        "(?i)^[\/](cric)"
     ]
 }

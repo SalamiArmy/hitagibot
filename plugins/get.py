@@ -6,12 +6,9 @@ import random
 import configparser
 import socket
 import telegram
-import logging
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -41,10 +38,9 @@ def main(tg):
         googurl = 'https://www.googleapis.com/customsearch/v1'
         args = {'cx': keyConfig['Google']['GCSE_SE_ID'],
                 'key': keyConfig['Google']['GCSE_APP_ID'],
-                'searchType': "image",
-                'safe': "off",
-                'q': requestText,
-                'searchType': "image"}
+                'searchType': 'image',
+                'safe': 'off',
+                'q': requestText}
         realUrl = googurl + '?' + urllib.parse.urlencode(args)
         data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
         if 'items' in data and len(data['items']) >= 9:
@@ -66,12 +62,9 @@ def main(tg):
                                       string.capwords(requestText) +
                                       (' ' + imagelink if len(imagelink) < 100 else ''))
             bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-            userWithCurrentChatAction = chat_id
-            urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') +\
-                                      ', I\'m afraid I can\'t find any images for ' +\
-                                      string.capwords(requestText)
-            requestTextForCurrentChatAction = requestText
-            return bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
+            return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') +\
+                                                         ', I\'m afraid I can\'t find any images for ' +\
+                                                         string.capwords(requestText))
     except telegram.TelegramError or \
             socket.timeout or socket.error or \
             urllib.error.URLError or \
@@ -93,6 +86,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](get) (.*)"
+        "(?i)^[\/](get) (.*)"
     ]
 }

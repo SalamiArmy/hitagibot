@@ -5,13 +5,13 @@ import plugins.get as get
 import tgapi
 
 class TestPick(unittest.TestCase):
-    def test_get_admingroup(self):
+    def test_get(self):
         tg = tgapi.TelegramApi
         fullMessageText = '/get trippy swirl'
 
         keyConfig = configparser.ConfigParser()
         keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
-        chatId = keyConfig['HeyBoet']['ADMIN_GROUP_CHAT_ID']
+        chatId = keyConfig['BOT_CONFIG']['admins']
 
         #for bot group:
         #chatId = -1001048076684
@@ -22,7 +22,7 @@ class TestPick(unittest.TestCase):
             "\",\"entities\":[{\"type\":\"bot_command\",\"offset\":0,\"length\":4}]}")
         tg.misc = json.loads("{\"bot_info\":{\"username\":\"@Bashs_Bot\"}}")
         result = get.main(tg)
-        self.assertIn(result, ["jason", "justin", "mat"])
+        self.assertIsNotNone(result, 'No result returned.')
 
 if __name__ == "__main__":
     unittest.main()

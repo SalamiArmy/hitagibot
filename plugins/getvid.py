@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -32,20 +28,23 @@ def main(tg):
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
-    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-    vidurl = 'https://www.googleapis.com/youtube/v3/search?safeSearch=none&type=video&key=' + keyConfig.get \
-        ('Google', 'GCSE_APP_ID') + '&part=snippet&q='
-    realUrl = vidurl + requestText
+    vidurl = 'https://www.googleapis.com/youtube/v3/search'
+    args = {'key': keyConfig['Google']['GCSE_APP_ID'],
+            'part': 'snippet',
+            'safeSearch': 'none',
+            'q': requestText,
+            'type': 'video'}
+    realUrl = vidurl + '?' + urllib.parse.urlencode(args)
     data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
     if 'items' in data and len(data['items']) >= 1:
         vidlink = data['items'][0]['id']['videoId']
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') +
-                                              'https://www.youtube.com/watch?v=' + vidlink + '&type=video')
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') +
-                                              ', I\'m afraid I can\'t do that.\n(Video not found)')
+        return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') +
+                                                     'https://www.youtube.com/watch?v=' + vidlink + '&type=video')
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') +
+                                                 ', I\'m afraid I can\'t do that.\n(Video not found)')
 
 plugin_info = {
     'name': "Get Vid",
@@ -54,6 +53,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getvid) (.*)"
+        "(?i)^[\/](getvid) (.*)"
     ]
 }

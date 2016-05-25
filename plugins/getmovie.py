@@ -1,15 +1,12 @@
 # coding=utf-8
-import logging
+import configparser
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -31,30 +28,29 @@ def main(tg):
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
-    movieUrl = 'http://www.omdbapi.com/?plot=short&r=json&y=&t='
-    realUrl = movieUrl + requestText
+    movieUrl = 'http://www.omdbapi.com/'
+    args = {'t': requestText,
+            'plot': 'short',
+            'searchType': 'image',
+            'r': 'json'}
+    realUrl = movieUrl + '?' + urllib.parse.urlencode(args)
     data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
     if 'Error' not in data:
         if 'Poster' in data and not data['Poster'] == 'N/A':
             bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.UPLOAD_PHOTO)
-            userWithCurrentChatAction = chat_id
-            urlForCurrentChatAction = data['Poster']
-            bot.sendPhoto(chat_id=userWithCurrentChatAction, photo=urlForCurrentChatAction,
-                          caption=(user if not user == '' else '') + data['Title'] + ':\n' + data['Plot'])
+            return bot.sendPhoto(chat_id=chat_id, photo=data['Poster'],
+                                 caption=(user if not user == '' else '') + '*' + data['Title'] + '*\n' + data['Plot'],
+                                 parse_mode='Markdown')
         else:
             bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-            userWithCurrentChatAction = chat_id
-            urlForCurrentChatAction = (user + ': ' if not user == '' else '') + \
-                                      data['Title'] + ':\n' + data['Plot']
-            bot.sendMessage(chat_id=userWithCurrentChatAction, text=urlForCurrentChatAction)
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find any movies for ' + \
-                                  requestText + '.'
-        bot.sendMessage(chat_id=userWithCurrentChatAction,
-                        text=urlForCurrentChatAction)
+            return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + \
+                                                         '*' + data['Title'] + '*\n' + data['Plot'],
+                                   parse_mode='Markdown')
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
+                              ', I\'m afraid I can\'t find any movies for ' + \
+                              requestText + '.')
 
 plugin_info = {
     'name': "Movie",
@@ -63,6 +59,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getmovie) (.*)"
+        "(?i)^[\/](getmovie) (.*)"
     ]
 }

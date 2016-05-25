@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -32,12 +28,13 @@ def main(tg):
 
     bot = telegram.Bot(keyConfig['BOT_CONFIG']['token'])
 
-
-    googurl = 'https://www.googleapis.com/customsearch/v1?&num=10&safe=off&cx=' + \
-              keyConfig.get('Google', 'GCSE_XSE_ID') + '&key=' + \
-              keyConfig.get('Google', 'GCSE_APP_ID') + '&q='
-    realUrl = googurl + requestText.encode('utf-8')
-    data = json.load(urllib.urlopen(realUrl))
+    googurl = 'https://www.googleapis.com/customsearch/v1'
+    args = {'cx': keyConfig['Google']['GCSE_XSE_ID'],
+            'key': keyConfig['Google']['GCSE_APP_ID'],
+            'safe': 'off',
+            'q': requestText}
+    realUrl = googurl + '?' + urllib.parse.urlencode(args)
+    data = json.loads(urllib.request.urlopen(realUrl).read().decode('utf-8'))
     if data['searchInformation']['totalResults'] >= '1':
         for item in data['items']:
             xlink = item['link']
@@ -53,11 +50,10 @@ def main(tg):
                 'xhamster.com/stories_search' not in xlink and \
                 'redtube.com/pornstar/' not in xlink:
                 bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-                bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + xlink)
-                break
-    else:
-        bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') +
-                                              ', you\'re just too filthy.')
+                return bot.sendMessage(chat_id=chat_id, text=(user + ': ' if not user == '' else '') + xlink)
+
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') +
+                                                 ', you\'re just too filthy.')
 
 plugin_info = {
     'name': "Get Porn",
@@ -66,6 +62,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getxxx) (.*)"
+        "(?i)^[\/](getxxx) (.*)"
     ]
 }

@@ -1,18 +1,14 @@
 # coding=utf-8
 import configparser
-import logging
+import re
 import urllib
-
 from html.parser import HTMLParser
 
 import telegram
-# reverse image search imports:
 import json
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -23,7 +19,7 @@ def main(tg):
         if not tg.message['from']['username'] == '' \
         else tg.message['from']['first_name'] + (' ' + tg.message['from']['last_name']) \
         if not tg.message['from']['last_name'] == '' \
-        else ''
+        else 'Dave'
     botName = tg.misc['bot_info']['username']
 
     message = message.replace(botName, "")
@@ -38,18 +34,14 @@ def main(tg):
     data = json.loads(urllib.request.urlopen(showsUrl + requestText).read().decode('utf-8'))
     if len(data) >= 1:
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.UPLOAD_PHOTO)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = data[0]['show']['image']['original']
-        bot.sendPhoto(chat_id=chat_id,
-                      photo=urlForCurrentChatAction,
-                      caption=HTMLParser.strip_tags(data[0]['show']['summary'].replace('\\', '')[:125]))
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        userWithCurrentChatAction = chat_id
-        urlForCurrentChatAction = 'I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I cannot find the TV show ' + \
-                                  requestText.title()
-        bot.sendMessage(chat_id=chat_id, text=urlForCurrentChatAction)
+        return bot.sendPhoto(chat_id=chat_id,
+                             photo=data[0]['show']['image']['original'],
+                             caption=re.sub(r'<[^>]*?>', '', data[0]['show']['summary'][:125]))
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + user + \
+                              ', I\'m afraid I cannot find the TV show ' + \
+                              requestText.title())
 
 plugin_info = {
     'name': "TV Show",
@@ -58,6 +50,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getshow) (.*)"
+        "(?i)^[\/](getshow) (.*)"
     ]
 }

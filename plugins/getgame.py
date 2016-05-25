@@ -1,16 +1,12 @@
 # coding=utf-8
 import configparser
-import logging
 import urllib
 
 import telegram
-# reverse image search imports:
 from bs4 import BeautifulSoup
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -45,13 +41,13 @@ def main(tg):
         gameResults = ""
     if gameResults:
         bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        bot.sendMessage(chat_id=chat_id, text=gameResults,
-                        disable_web_page_preview=True, parse_mode='Markdown')
-    else:
-        bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
-        bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
-                                  ', I\'m afraid I can\'t find the steam game ' + \
-                                  requestText)
+        return bot.sendMessage(chat_id=chat_id, text=gameResults,
+                               disable_web_page_preview=True, parse_mode='Markdown')
+
+    bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
+    return bot.sendMessage(chat_id=chat_id, text='I\'m sorry ' + (user if not user == '' else 'Dave') + \
+                                                 ', I\'m afraid I can\'t find the steam game ' + \
+                                                 requestText)
 
 def steam_results_parser(code):
     soup = BeautifulSoup(code, "html.parser")
@@ -129,6 +125,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](getgame) (.*)"
+        "(?i)^[\/](getgame) (.*)"
     ]
 }

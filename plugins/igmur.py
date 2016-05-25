@@ -1,5 +1,4 @@
 import configparser
-import logging
 import random
 import string
 import telegram
@@ -7,8 +6,6 @@ from imgurpython import ImgurClient
 
 
 def main(tg):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Read keys.ini file at program start (don't forget to put your keys in there!)
     keyConfig = configparser.ConfigParser()
     keyConfig.read(["keys.ini", "config.ini", "..\keys.ini", "..\config.ini"])
@@ -51,6 +48,6 @@ plugin_info = {
 
 arguments = {
     'text': [
-        "^[/](imgur) (.*)"
+        "(?i)^[\/](imgur) (.*)"
     ]
 }
